@@ -163,3 +163,30 @@ class PaymentResponse(BaseModel):
 
 class OrderStatusUpdate(BaseModel):
     status: str
+
+
+class RegisterScheme(BaseModel):
+    username: str
+    email: str
+    password: str
+
+class LoginScheme(BaseModel):
+    username: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    role: str
+
+    class Config:
+        from_attributes = True
+
+class ChangePasswordScheme(BaseModel):
+    old_password: str
+    new_password: str
+
+class UserUpdateScheme(BaseModel):
+    username: str | None = None
+    email: str | None = None

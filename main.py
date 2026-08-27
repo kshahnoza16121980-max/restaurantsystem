@@ -1,11 +1,30 @@
+from traceback import extract_stack
+
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+
+from sqlalchemy.util import deprecated
 
 from database import *
 from models import *
 from schemes import *
 
+from fastapi.security import OAuth2PasswordBearer, oauth2
+from jose import jwt
+from passlib.context import CryptContext
+
+SECRET_KEY = "secretKey"
+ALGORITHM = "HS256"
+
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto"
+)
+
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/auth/login"
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -30,8 +49,8 @@ app = FastAPI(
     description="Creates a new food category in the restaurant system."
 )
 def create_category(
-    category: CategoryCreate,
-    db: Session = Depends(get_db)
+        category: CategoryCreate,
+        db: Session = Depends(get_db)
 ):
     new_category = Category(
         **category.model_dump()
@@ -51,7 +70,7 @@ def create_category(
     description="Returns a list of all food categories."
 )
 def get_categories(
-    db: Session = Depends(get_db)
+        db: Session = Depends(get_db)
 ):
     return db.query(Category).all()
 
@@ -63,8 +82,8 @@ def get_categories(
     description="Returns detailed information about a specific category."
 )
 def get_category(
-    category_id: int,
-    db: Session = Depends(get_db)
+        category_id: int,
+        db: Session = Depends(get_db)
 ):
     category = db.query(Category).filter(
         Category.id == category_id
@@ -86,9 +105,9 @@ def get_category(
     description="Updates the information of an existing food category."
 )
 def update_category(
-    category_id: int,
-    category_data: CategoryUpdate,
-    db: Session = Depends(get_db)
+        category_id: int,
+        category_data: CategoryUpdate,
+        db: Session = Depends(get_db)
 ):
     category = db.query(Category).filter(
         Category.id == category_id
@@ -101,7 +120,7 @@ def update_category(
         )
 
     for key, value in category_data.model_dump(
-        exclude_unset=True
+            exclude_unset=True
     ).items():
         setattr(category, key, value)
 
@@ -117,8 +136,8 @@ def update_category(
     description="Deletes an existing food category."
 )
 def delete_category(
-    category_id: int,
-    db: Session = Depends(get_db)
+        category_id: int,
+        db: Session = Depends(get_db)
 ):
     category = db.query(Category).filter(
         Category.id == category_id
@@ -147,13 +166,13 @@ def delete_category(
     response_model=FoodResponse,
     summary="Create food",
     description=(
-        "Creates a new food item. "
-        "The specified category must exist and the price must be greater than zero."
+            "Creates a new food item. "
+            "The specified category must exist and the price must be greater than zero."
     )
 )
 def create_food(
-    food: FoodCreate,
-    db: Session = Depends(get_db)
+        food: FoodCreate,
+        db: Session = Depends(get_db)
 ):
     category = db.query(Category).filter(
         Category.id == food.category_id
@@ -189,7 +208,7 @@ def create_food(
     description="Returns a list of all food items in the restaurant."
 )
 def get_foods(
-    db: Session = Depends(get_db)
+        db: Session = Depends(get_db)
 ):
     return db.query(Food).all()
 
@@ -201,8 +220,8 @@ def get_foods(
     description="Returns detailed information about a specific food item."
 )
 def get_food(
-    food_id: int,
-    db: Session = Depends(get_db)
+        food_id: int,
+        db: Session = Depends(get_db)
 ):
     food = db.query(Food).filter(
         Food.id == food_id
@@ -222,14 +241,14 @@ def get_food(
     response_model=FoodResponse,
     summary="Update food",
     description=(
-        "Updates an existing food item. "
-        "The selected category must exist and the price must be greater than zero."
+            "Updates an existing food item. "
+            "The selected category must exist and the price must be greater than zero."
     )
 )
 def update_food(
-    food_id: int,
-    food_data: FoodUpdate,
-    db: Session = Depends(get_db)
+        food_id: int,
+        food_data: FoodUpdate,
+        db: Session = Depends(get_db)
 ):
     food = db.query(Food).filter(
         Food.id == food_id
@@ -258,7 +277,7 @@ def update_food(
         )
 
     for key, value in food_data.model_dump(
-        exclude_unset=True
+            exclude_unset=True
     ).items():
         setattr(food, key, value)
 
@@ -274,8 +293,8 @@ def update_food(
     description="Deletes an existing food item from the restaurant."
 )
 def delete_food(
-    food_id: int,
-    db: Session = Depends(get_db)
+        food_id: int,
+        db: Session = Depends(get_db)
 ):
     food = db.query(Food).filter(
         Food.id == food_id
@@ -306,8 +325,8 @@ def delete_food(
     description="Creates a new restaurant customer."
 )
 def create_customer(
-    customer: CustomerCreate,
-    db: Session = Depends(get_db)
+        customer: CustomerCreate,
+        db: Session = Depends(get_db)
 ):
     new_customer = Customer(
         **customer.model_dump()
@@ -327,7 +346,7 @@ def create_customer(
     description="Returns a list of all registered customers."
 )
 def get_customers(
-    db: Session = Depends(get_db)
+        db: Session = Depends(get_db)
 ):
     return db.query(Customer).all()
 
@@ -339,8 +358,8 @@ def get_customers(
     description="Returns detailed information about a specific customer."
 )
 def get_customer(
-    customer_id: int,
-    db: Session = Depends(get_db)
+        customer_id: int,
+        db: Session = Depends(get_db)
 ):
     customer = db.query(Customer).filter(
         Customer.id == customer_id
@@ -360,14 +379,14 @@ def get_customer(
     response_model=CustomerResponse,
     summary="Update customer",
     description=(
-        "Updates an existing customer's information. "
-        "The email address must be unique."
+            "Updates an existing customer's information. "
+            "The email address must be unique."
     )
 )
 def update_customer(
-    customer_id: int,
-    customer_data: CustomerUpdate,
-    db: Session = Depends(get_db)
+        customer_id: int,
+        customer_data: CustomerUpdate,
+        db: Session = Depends(get_db)
 ):
     customer = db.query(Customer).filter(
         Customer.id == customer_id
@@ -391,7 +410,7 @@ def update_customer(
         )
 
     for key, value in customer_data.model_dump(
-        exclude_unset=True
+            exclude_unset=True
     ).items():
         setattr(customer, key, value)
 
@@ -407,8 +426,8 @@ def update_customer(
     description="Deletes an existing customer."
 )
 def delete_customer(
-    customer_id: int,
-    db: Session = Depends(get_db)
+        customer_id: int,
+        db: Session = Depends(get_db)
 ):
     customer = db.query(Customer).filter(
         Customer.id == customer_id
@@ -437,13 +456,13 @@ def delete_customer(
     response_model=RestaurantTableResponse,
     summary="Create restaurant table",
     description=(
-        "Creates a new restaurant table. "
-        "The table number must be unique and capacity must be greater than zero."
+            "Creates a new restaurant table. "
+            "The table number must be unique and capacity must be greater than zero."
     )
 )
 def create_restaurant_table(
-    restaurant_table: RestaurantTableCreate,
-    db: Session = Depends(get_db)
+        restaurant_table: RestaurantTableCreate,
+        db: Session = Depends(get_db)
 ):
     existing_table = db.query(RestaurantTable).filter(
         RestaurantTable.table_number ==
@@ -480,7 +499,7 @@ def create_restaurant_table(
     description="Returns all restaurant tables and their availability status."
 )
 def get_restaurant_tables(
-    db: Session = Depends(get_db)
+        db: Session = Depends(get_db)
 ):
     return db.query(RestaurantTable).all()
 
@@ -492,8 +511,8 @@ def get_restaurant_tables(
     description="Returns detailed information about a specific restaurant table."
 )
 def get_restaurant_table(
-    restaurant_table_id: int,
-    db: Session = Depends(get_db)
+        restaurant_table_id: int,
+        db: Session = Depends(get_db)
 ):
     restaurant_table = db.query(RestaurantTable).filter(
         RestaurantTable.id == restaurant_table_id
@@ -513,14 +532,14 @@ def get_restaurant_table(
     response_model=RestaurantTableResponse,
     summary="Update restaurant table",
     description=(
-        "Updates an existing restaurant table. "
-        "The table number must remain unique and capacity must be greater than zero."
+            "Updates an existing restaurant table. "
+            "The table number must remain unique and capacity must be greater than zero."
     )
 )
 def update_restaurant_table(
-    restaurant_table_id: int,
-    restaurant_table_data: RestaurantTableUpdate,
-    db: Session = Depends(get_db)
+        restaurant_table_id: int,
+        restaurant_table_data: RestaurantTableUpdate,
+        db: Session = Depends(get_db)
 ):
     restaurant_table = db.query(RestaurantTable).filter(
         RestaurantTable.id == restaurant_table_id
@@ -553,7 +572,7 @@ def update_restaurant_table(
         )
 
     for key, value in restaurant_table_data.model_dump(
-        exclude_unset=True
+            exclude_unset=True
     ).items():
         setattr(restaurant_table, key, value)
 
@@ -569,8 +588,8 @@ def update_restaurant_table(
     description="Deletes an existing restaurant table."
 )
 def delete_restaurant_table(
-    restaurant_table_id: int,
-    db: Session = Depends(get_db)
+        restaurant_table_id: int,
+        db: Session = Depends(get_db)
 ):
     restaurant_table = db.query(RestaurantTable).filter(
         RestaurantTable.id == restaurant_table_id
@@ -599,13 +618,13 @@ def delete_restaurant_table(
     response_model=OrderResponse,
     summary="Create order",
     description=(
-        "Creates a new customer order. "
-        "The customer and table must exist, and the selected table must be available."
+            "Creates a new customer order. "
+            "The customer and table must exist, and the selected table must be available."
     )
 )
 def create_order(
-    order: OrderCreate,
-    db: Session = Depends(get_db)
+        order: OrderCreate,
+        db: Session = Depends(get_db)
 ):
     customer = db.query(Customer).filter(
         Customer.id == order.customer_id
@@ -653,7 +672,7 @@ def create_order(
     description="Returns a list of all restaurant orders."
 )
 def get_orders(
-    db: Session = Depends(get_db)
+        db: Session = Depends(get_db)
 ):
     return db.query(Order).all()
 
@@ -665,8 +684,8 @@ def get_orders(
     description="Returns detailed information about a specific order."
 )
 def get_order(
-    order_id: int,
-    db: Session = Depends(get_db)
+        order_id: int,
+        db: Session = Depends(get_db)
 ):
     order = db.query(Order).filter(
         Order.id == order_id
@@ -688,9 +707,9 @@ def get_order(
     description="Updates the customer and restaurant table information of an existing order."
 )
 def update_order(
-    order_id: int,
-    order_data: OrderUpdate,
-    db: Session = Depends(get_db)
+        order_id: int,
+        order_data: OrderUpdate,
+        db: Session = Depends(get_db)
 ):
     order = db.query(Order).filter(
         Order.id == order_id
@@ -723,7 +742,7 @@ def update_order(
         )
 
     for key, value in order_data.model_dump(
-        exclude_unset=True
+            exclude_unset=True
     ).items():
         setattr(order, key, value)
 
@@ -737,13 +756,13 @@ def update_order(
     "/orders/{order_id}",
     summary="Delete order",
     description=(
-        "Deletes an order and makes its associated restaurant table "
-        "available again."
+            "Deletes an order and makes its associated restaurant table "
+            "available again."
     )
 )
 def delete_order(
-    order_id: int,
-    db: Session = Depends(get_db)
+        order_id: int,
+        db: Session = Depends(get_db)
 ):
     order = db.query(Order).filter(
         Order.id == order_id
@@ -779,14 +798,14 @@ def delete_order(
     response_model=OrderItemResponse,
     summary="Add item to order",
     description=(
-        "Adds a food item to an existing order. "
-        "The food must be available and quantity must be greater than zero. "
-        "The order total price is updated automatically."
+            "Adds a food item to an existing order. "
+            "The food must be available and quantity must be greater than zero. "
+            "The order total price is updated automatically."
     )
 )
 def create_order_item(
-    order_item: OrderItemCreate,
-    db: Session = Depends(get_db)
+        order_item: OrderItemCreate,
+        db: Session = Depends(get_db)
 ):
     order = db.query(Order).filter(
         Order.id == order_item.order_id
@@ -830,7 +849,7 @@ def create_order_item(
     db.add(new_order_item)
 
     order.total_price += (
-        food.price * order_item.quantity
+            food.price * order_item.quantity
     )
 
     db.commit()
@@ -846,7 +865,7 @@ def create_order_item(
     description="Returns all food items belonging to customer orders."
 )
 def get_order_items(
-    db: Session = Depends(get_db)
+        db: Session = Depends(get_db)
 ):
     return db.query(OrderItem).all()
 
@@ -858,8 +877,8 @@ def get_order_items(
     description="Returns detailed information about a specific order item."
 )
 def get_order_item(
-    order_item_id: int,
-    db: Session = Depends(get_db)
+        order_item_id: int,
+        db: Session = Depends(get_db)
 ):
     order_item = db.query(OrderItem).filter(
         OrderItem.id == order_item_id
@@ -879,14 +898,14 @@ def get_order_item(
     response_model=OrderItemResponse,
     summary="Update order item",
     description=(
-        "Updates the food or quantity of an order item "
-        "and recalculates the order total."
+            "Updates the food or quantity of an order item "
+            "and recalculates the order total."
     )
 )
 def update_order_item(
-    order_item_id: int,
-    order_item_data: OrderItemUpdate,
-    db: Session = Depends(get_db)
+        order_item_id: int,
+        order_item_data: OrderItemUpdate,
+        db: Session = Depends(get_db)
 ):
     order_item = db.query(OrderItem).filter(
         OrderItem.id == order_item_id
@@ -921,8 +940,8 @@ def update_order_item(
         )
 
     old_total = (
-        order_item.price *
-        order_item.quantity
+            order_item.price *
+            order_item.quantity
     )
 
     order_item.food_id = order_item_data.food_id
@@ -930,8 +949,8 @@ def update_order_item(
     order_item.price = food.price
 
     new_total = (
-        food.price *
-        order_item_data.quantity
+            food.price *
+            order_item_data.quantity
     )
 
     order_item.order.total_price -= old_total
@@ -947,13 +966,13 @@ def update_order_item(
     "/order-items/{item_id}",
     summary="Delete order item",
     description=(
-        "Removes an item from an order "
-        "and subtracts its price from the order total."
+            "Removes an item from an order "
+            "and subtracts its price from the order total."
     )
 )
 def delete_order_item(
-    item_id: int,
-    db: Session = Depends(get_db)
+        item_id: int,
+        db: Session = Depends(get_db)
 ):
     item = db.query(OrderItem).filter(
         OrderItem.id == item_id
@@ -966,7 +985,7 @@ def delete_order_item(
         )
 
     item.order.total_price -= (
-        item.price * item.quantity
+            item.price * item.quantity
     )
 
     db.delete(item)
@@ -986,13 +1005,13 @@ def delete_order_item(
     response_model=PaymentResponse,
     summary="Create payment",
     description=(
-        "Creates a payment for an existing order. "
-        "The payment amount must be greater than zero."
+            "Creates a payment for an existing order. "
+            "The payment amount must be greater than zero."
     )
 )
 def create_payment(
-    payment: PaymentCreate,
-    db: Session = Depends(get_db)
+        payment: PaymentCreate,
+        db: Session = Depends(get_db)
 ):
     order = db.query(Order).filter(
         Order.id == payment.order_id
@@ -1028,7 +1047,7 @@ def create_payment(
     description="Returns a list of all payments."
 )
 def get_payments(
-    db: Session = Depends(get_db)
+        db: Session = Depends(get_db)
 ):
     return db.query(Payment).all()
 
@@ -1040,8 +1059,8 @@ def get_payments(
     description="Returns detailed information about a specific payment."
 )
 def get_payment(
-    payment_id: int,
-    db: Session = Depends(get_db)
+        payment_id: int,
+        db: Session = Depends(get_db)
 ):
     payment = db.query(Payment).filter(
         Payment.id == payment_id
@@ -1061,14 +1080,14 @@ def get_payment(
     response_model=PaymentResponse,
     summary="Update payment",
     description=(
-        "Updates the order, amount, or payment method "
-        "of an existing payment."
+            "Updates the order, amount, or payment method "
+            "of an existing payment."
     )
 )
 def update_payment(
-    payment_id: int,
-    payment_data: PaymentUpdate,
-    db: Session = Depends(get_db)
+        payment_id: int,
+        payment_data: PaymentUpdate,
+        db: Session = Depends(get_db)
 ):
     payment = db.query(Payment).filter(
         Payment.id == payment_id
@@ -1112,8 +1131,8 @@ def update_payment(
     description="Deletes an existing payment."
 )
 def delete_payment(
-    payment_id: int,
-    db: Session = Depends(get_db)
+        payment_id: int,
+        db: Session = Depends(get_db)
 ):
     payment = db.query(Payment).filter(
         Payment.id == payment_id
@@ -1143,8 +1162,8 @@ def delete_payment(
     description="Returns all food items that belong to a specific category."
 )
 def get_category_foods(
-    category_id: int,
-    db: Session = Depends(get_db)
+        category_id: int,
+        db: Session = Depends(get_db)
 ):
     category = db.query(Category).filter(
         Category.id == category_id
@@ -1165,8 +1184,8 @@ def get_category_foods(
     description="Returns all orders created by a specific customer."
 )
 def get_customers_orders(
-    customer_id: int,
-    db: Session = Depends(get_db)
+        customer_id: int,
+        db: Session = Depends(get_db)
 ):
     customer = db.query(Customer).filter(
         Customer.id == customer_id
@@ -1187,8 +1206,8 @@ def get_customers_orders(
     description="Returns all food items included in a specific order."
 )
 def get_order_items_by_order(
-    order_id: int,
-    db: Session = Depends(get_db)
+        order_id: int,
+        db: Session = Depends(get_db)
 ):
     order = db.query(Order).filter(
         Order.id == order_id
@@ -1209,7 +1228,7 @@ def get_order_items_by_order(
     description="Returns only food items that are currently available."
 )
 def get_available_foods(
-    db: Session = Depends(get_db)
+        db: Session = Depends(get_db)
 ):
     foods = db.query(Food).filter(
         Food.is_available == True
@@ -1224,7 +1243,7 @@ def get_available_foods(
     description="Returns only restaurant tables that are currently available."
 )
 def get_available_tables(
-    db: Session = Depends(get_db)
+        db: Session = Depends(get_db)
 ):
     tables = db.query(RestaurantTable).filter(
         RestaurantTable.is_available == True
@@ -1237,13 +1256,13 @@ def get_available_tables(
     "/orders/{order_id}/total",
     summary="Calculate order total",
     description=(
-        "Calculates the total price of all items in an order "
-        "and updates the order total_price field."
+            "Calculates the total price of all items in an order "
+            "and updates the order total_price field."
     )
 )
 def get_order_total(
-    order_id: int,
-    db: Session = Depends(get_db)
+        order_id: int,
+        db: Session = Depends(get_db)
 ):
     order = db.query(Order).filter(
         Order.id == order_id
@@ -1274,14 +1293,14 @@ def get_order_total(
     "/orders/{order_id}/status",
     summary="Update order status",
     description=(
-        "Changes the status of an order. "
-        "Allowed statuses are pending, preparing, completed and cancelled."
+            "Changes the status of an order. "
+            "Allowed statuses are pending, preparing, completed and cancelled."
     )
 )
 def update_order_status(
-    order_id: int,
-    status_data: OrderStatusUpdate,
-    db: Session = Depends(get_db)
+        order_id: int,
+        status_data: OrderStatusUpdate,
+        db: Session = Depends(get_db)
 ):
     order = db.query(Order).filter(
         Order.id == order_id
@@ -1318,13 +1337,13 @@ def update_order_status(
     "/orders/{order_id}/complete",
     summary="Complete order",
     description=(
-        "Marks an order as completed and makes its restaurant table "
-        "available again."
+            "Marks an order as completed and makes its restaurant table "
+            "available again."
     )
 )
 def complete_order(
-    order_id: int,
-    db: Session = Depends(get_db)
+        order_id: int,
+        db: Session = Depends(get_db)
 ):
     order = db.query(Order).filter(
         Order.id == order_id
@@ -1365,8 +1384,8 @@ def complete_order(
     description="Returns all payments associated with a specific order."
 )
 def get_order_payments(
-    order_id: int,
-    db: Session = Depends(get_db)
+        order_id: int,
+        db: Session = Depends(get_db)
 ):
     order = db.query(Order).filter(
         Order.id == order_id
@@ -1385,13 +1404,13 @@ def get_order_payments(
     "/orders/{order_id}/paid",
     summary="Get total paid amount",
     description=(
-        "Calculates and returns the total amount of money "
-        "already paid for a specific order."
+            "Calculates and returns the total amount of money "
+            "already paid for a specific order."
     )
 )
 def get_order_paid(
-    order_id: int,
-    db: Session = Depends(get_db)
+        order_id: int,
+        db: Session = Depends(get_db)
 ):
     order = db.query(Order).filter(
         Order.id == order_id
@@ -1412,3 +1431,229 @@ def get_order_paid(
         "order_id": order.id,
         "paid": total_paid
     }
+
+
+@app.post("/auth/register", response_model=UserResponse)
+def register(
+        user_data: RegisterScheme,
+        db: Session = Depends(get_db)
+):
+    existing_user = db.query(User).filter(
+        User.username == user_data.username
+    ).first()
+
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Username already existss"
+        )
+
+    existing_email = db.query(User).filter(
+        User.email == user_data.email
+    ).first()
+
+    if existing_email:
+        raise HTTPException(
+            status_code=400,
+            detail="Email already exists"
+        )
+
+    hashed_password = pwd_context.hash(
+        user_data.password
+    )
+
+    user = User(
+        username=user_data.username,
+        email=user_data.email,
+        password=hashed_password
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return user
+
+
+@app.post("/auth/login")
+def login(
+        user_data: LoginScheme,
+        db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(
+        User.username == user_data.username
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid username or password"
+        )
+
+    if not pwd_context.verify(
+            user_data.password,
+            user.password
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid username or password"
+        )
+
+    token = jwt.encode(
+        {
+            "user_id": user.id,
+            "role": user.role
+        },
+        SECRET_KEY,
+        algorithm=ALGORITHM
+    )
+
+    return {
+        "access_token": token,
+        "token_type": "bearer"
+    }
+
+
+def get_current_user(
+        token: str = Depends(oauth2_scheme),
+        db: Session = Depends(get_db)
+):
+    try:
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+        user_id = payload.get("user_id")
+
+        if user_id is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token"
+            )
+
+    except Exception:
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid token"
+        )
+
+    user = db.query(User).filter(
+        User.id == user_id
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="User not found"
+        )
+
+    return user
+
+
+@app.get(
+    "/auth/me",
+    response_model=UserResponse
+)
+def get_me(
+        current_user: User = Depends(get_current_user)
+):
+    return current_user
+
+
+@app.put("/auth/change-password")
+def change_password(
+        password_data: ChangePasswordScheme,
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db)
+):
+    if not pwd_context.verify(
+            password_data.old_password,
+            current_user.password
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Old password is incorrect"
+        )
+
+    current_user.password = pwd_context.hash(
+        password_data.new_password
+    )
+
+    db.commit()
+
+    return {
+        "message": "Password changed successfully"
+    }
+
+
+@app.put(
+    "/users/me",
+    response_model=UserResponse
+)
+def update_profile(
+        user_data: UserUpdateScheme,
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db)
+):
+    if user_data.username is not None:
+        existing_user = db.query(User).filter(
+            User.username == user_data.username,
+            User.id != current_user.id
+        ).first()
+
+        if existing_user:
+            raise HTTPException(
+                status_code=400,
+                detail="Username already exists"
+            )
+        current_user.username = user_data.username
+
+        if user_data.email is not None:
+            existing_email = db.query(User).filter(
+                User.email == user_data.email,
+                User.id != current_user.id
+            ).first()
+
+            if existing_email:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Email already exists"
+                )
+
+            current_user.email == user_data.email
+
+        db.commit()
+        db.refresh(current_user)
+
+        return current_user
+
+
+def get_admin(
+        current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Admin access required"
+        )
+    return current_user
+
+
+@app.get(
+    "/admin/users",
+    response_model=List[UserResponse]
+)
+def get_all_users(
+        admin: User = Depends(get_admin),
+        db: Session = Depends(get_db)
+):
+    return db.query(User).all()
+
+
+@app.get("/admin/orders")
+def get_all_orders(
+        admin: User = Depends(get_admin),
+        db: Session = Depends(get_db)
+):
+    return db.query(Order).all()
