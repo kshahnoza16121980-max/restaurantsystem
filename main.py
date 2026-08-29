@@ -1,30 +1,29 @@
-from traceback import extract_stack
-
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
 from sqlalchemy.orm import Session
 from typing import List
-
-from sqlalchemy.util import deprecated
 
 from database import *
 from models import *
 from schemes import *
 
-from fastapi.security import OAuth2PasswordBearer, oauth2
-from jose import jwt
+from jose import jwt, JWTError
 from passlib.context import CryptContext
 
-SECRET_KEY = "secretKey"
+
+SECRET_KEY = "7f4c9e2a1b8d6f03c5e7a91d4b2f8c6e0a3d7f9b1c5e8a2f6d0b4c9e7a1f3"
 ALGORITHM = "HS256"
+
 
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto"
 )
 
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/auth/login"
-)
+
+security = HTTPBearer()
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -1515,15 +1514,18 @@ def login(
 
 
 def get_current_user(
-        token: str = Depends(oauth2_scheme),
+        credentials: HTTPAuthorizationCredentials = Depends(security),
         db: Session = Depends(get_db)
 ):
+    token = credentials.credentials
+
     try:
         payload = jwt.decode(
             token,
             SECRET_KEY,
             algorithms=[ALGORITHM]
         )
+
         user_id = payload.get("user_id")
 
         if user_id is None:
@@ -1532,9 +1534,9 @@ def get_current_user(
                 detail="Invalid token"
             )
 
-    except Exception:
+    except JWTError:
         raise HTTPException(
-            status_code=403,
+            status_code=401,
             detail="Invalid token"
         )
 
@@ -1607,26 +1609,27 @@ def update_profile(
                 status_code=400,
                 detail="Username already exists"
             )
+
         current_user.username = user_data.username
 
-        if user_data.email is not None:
-            existing_email = db.query(User).filter(
-                User.email == user_data.email,
-                User.id != current_user.id
-            ).first()
+    if user_data.email is not None:
+        existing_email = db.query(User).filter(
+            User.email == user_data.email,
+            User.id != current_user.id
+        ).first()
 
-            if existing_email:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Email already exists"
-                )
+        if existing_email:
+            raise HTTPException(
+                status_code=400,
+                detail="Email already exists"
+            )
 
-            current_user.email == user_data.email
+        current_user.email = user_data.email
 
-        db.commit()
-        db.refresh(current_user)
+    db.commit()
+    db.refresh(current_user)
 
-        return current_user
+    return current_user
 
 
 def get_admin(
@@ -1657,3 +1660,4 @@ def get_all_orders(
         db: Session = Depends(get_db)
 ):
     return db.query(Order).all()
+
